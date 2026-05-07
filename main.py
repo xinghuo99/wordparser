@@ -59,6 +59,40 @@ def main():
         print(f"子章节数量: {len(content['children'])}")
         for child in content['children']:
             print(f"  └── {child['title']}")
+    
+    print("\n=== 提取页眉内容 ===")
+    headers = parser.extract_headers()
+    if headers:
+        print(f"共提取到 {len(headers)} 个节的页眉")
+        for section_info in headers:
+            print(f"\n节 {section_info['section_index'] + 1}:")
+            for header in section_info['headers']:
+                print(f"  类型: {header['type']}")
+                print(f"  内容: {header['content']}")
+                if header['tables']:
+                    print(f"  表格数量: {len(header['tables'])}")
+    else:
+        print("文档中没有页眉内容")
+    
+    print("\n=== 获取所有页眉文本 ===")
+    all_header_text = parser.get_all_headers_text()
+    print(f"所有页眉内容:\n{all_header_text}")
+    
+    print("\n=== 获取整个文档内容（文字+表格转文字） ===")
+    full_text = parser.get_full_document_text(include_headers=True)
+    print(full_text)
+    
+    print("\n=== 按章节名称获取内容（包含子章节） ===")
+    section_text = parser.get_section_text_by_name('第一章 概述')
+    print(section_text)
+    
+    print("\n=== 按章节名称获取内容（不包含子章节） ===")
+    section_text_no_child = parser.get_section_text_by_name('第一章 概述', include_children=False)
+    print(section_text_no_child)
+    
+    print("\n=== 按章节名称获取子章节内容 ===")
+    section_text_child = parser.get_section_text_by_name('1.1 项目背景')
+    print(section_text_child)
 
 
 if __name__ == "__main__":

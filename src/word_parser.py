@@ -29,6 +29,7 @@ class WordParser:
         self.doc_path = doc_path
         self.document = None
         self.sections = []
+        self.headers = []
         self.style_level_map = {
             'Heading 1': 1,
             'Heading 2': 2,
@@ -112,6 +113,63 @@ class WordParser:
                 return i
         return float('inf')
 
+    def extract_headers(self) -> List[Dict[str, Any]]:
+        """提取文档中所有页眉内容，支持多种页眉格式"""
+        if not self.document:
+            self.load_document()
+
+        self.headers = []
+        
+        for section_idx, section in enumerate(self.document.sections):
+            headers_info = {
+                'section_index': section_idx,
+                'headers': []
+            }
+            
+            header_types = [
+                ('default', section.header),
+                ('first_page', section.first_page_header),
+                ('even_page', section.even_page_header)
+            ]
+            
+            for header_type, header in header_types:
+                if header is not None:
+                    content = []
+                    tables = []
+                    
+                    for paragraph in header.paragraphs:
+                        text = paragraph.text.strip()
+                        if text:
+                            content.append(text)
+                    
+                    for table in header.tables:
+                        tables.append(self._parse_table(table))
+                    
+                    if content or tables:
+                        headers_info['headers'].append({
+                            'type': header_type,
+                            'content': '\n'.join(content),
+                            'tables': tables
+                        })
+            
+            if headers_info['headers']:
+                self.headers.append(headers_info)
+        
+        return self.headers
+
+    def get_all_headers_text(self) -> str:
+        """获取所有页眉的文本内容，合并为一个字符串"""
+        if not self.headers:
+            self.extract_headers()
+        
+        all_text = []
+        for section_info in self.headers:
+            for header in section_info['headers']:
+                if header['content']:
+                    all_text.append(header['content'])
+        
+        return '\n'.join(all_text)
+
     def find_section_by_name(self, name: str, sections: Optional[List[Section]] = None) -> Optional[Section]:
         if sections is None:
             sections = self.sections
@@ -135,3 +193,97 @@ class WordParser:
             'tables': section.tables,
             'children': [self.get_section_content(child) for child in section.children]
         }
+
+    def _table_to_text(self, table: List[List[str]]) -> str:
+        """将表格内容转换为文字描述，按照表头+值的形式"""
+        if not table or len(table) < 2:
+            return ""
+        
+        headers = table[0]
+        result_lines = []
+        
+        for row in table[1:]:
+            row_desc = []
+            for i, header in enumerate(headers):
+                if i < len(row):
+                    value = row[i]
+                    if value:
+                        row_desc.append(f"{header}: {value}")
+            if row_desc:
+                result_lines.append("；".join(row_desc))
+        
+        return "。\n".join(result_lines) + "。" if result_lines else ""
+
+    def get_full_document_text(self, include_headers: bool = True) -> str:
+        """获取整个文档的内容，文字加表格（表格内容组装成文字描述）"""
+        if not self.sections:
+            self.extract_sections()
+        
+        parts = []
+        
+        if include_headers:
+            headers_text = self.get_all_headers_text()
+            if headers_text:
+                parts.append(headers_text)
+        
+        def process_section(section: Section, indent: int = 0):
+            prefix = "    " * indent
+            title_line = f"{prefix}{section.title}"
+            parts.append(title_line)
+            
+            if section.content:
+                content_lines = section.content.split('\n')
+                for line in content_lines:
+                    if line.strip():
+                        parts.append(f"{prefix}    {line.strip()}")
+            
+            for table in section.tables:
+                table_text = self._table_to_text(table)
+                if table_text:
+                    table_lines = table_text.split('\n')
+                    for line in table_lines:
+                        parts.append(f"{prefix}    表格内容：{line}")
+            
+            for child in section.children:
+                process_section(child, indent + 1)
+        
+        for section in self.sections:
+            process_section(section)
+        
+        return '\n'.join(parts)
+
+    def get_section_text_by_name(self, name: str, include_children: bool = True) -> str:
+        """按章节名称获取章节内容，文字加表格（表格内容组装成文字描述）"""
+        if not self.sections:
+            self.extract_sections()
+        
+        section = self.find_section_by_name(name)
+        if not section:
+            return f"未找到章节: {name}"
+        
+        parts = []
+        
+        def process_section(sec: Section, indent: int = 0):
+            prefix = "    " * indent
+            title_line = f"{prefix}{sec.title}"
+            parts.append(title_line)
+            
+            if sec.content:
+                content_lines = sec.content.split('\n')
+                for line in content_lines:
+                    if line.strip():
+                        parts.append(f"{prefix}    {line.strip()}")
+            
+            for table in sec.tables:
+                table_text = self._table_to_text(table)
+                if table_text:
+                    table_lines = table_text.split('\n')
+                    for line in table_lines:
+                        parts.append(f"{prefix}    表格内容：{line}")
+            
+            if include_children:
+                for child in sec.children:
+                    process_section(child, indent + 1)
+        
+        process_section(section)
+        return '\n'.join(parts)

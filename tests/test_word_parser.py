@@ -131,3 +131,90 @@ def test_table_extraction(test_document):
     assert table[0] == ['序号', '项目名称', '状态']
     assert table[1] == ['1', '项目A', '进行中']
     assert table[2] == ['2', '项目B', '已完成']
+
+
+def test_extract_headers(test_document):
+    parser = WordParser(test_document)
+    headers = parser.extract_headers()
+    
+    assert len(headers) >= 1
+    
+    section_header = headers[0]
+    assert 'section_index' in section_header
+    assert 'headers' in section_header
+    
+    assert len(section_header['headers']) >= 1
+    
+    header = section_header['headers'][0]
+    assert 'type' in header
+    assert 'content' in header
+    assert 'tables' in header
+    assert header['type'] == 'default'
+    assert 'Word Parser 测试文档' in header['content']
+
+
+def test_get_all_headers_text(test_document):
+    parser = WordParser(test_document)
+    all_text = parser.get_all_headers_text()
+    
+    assert isinstance(all_text, str)
+    assert 'Word Parser 测试文档' in all_text
+
+
+def test_table_to_text(test_document):
+    parser = WordParser(test_document)
+    
+    table = [
+        ['序号', '项目名称', '状态'],
+        ['1', '项目A', '进行中'],
+        ['2', '项目B', '已完成']
+    ]
+    
+    result = parser._table_to_text(table)
+    
+    assert isinstance(result, str)
+    assert '序号: 1' in result
+    assert '项目名称: 项目A' in result
+    assert '状态: 进行中' in result
+    assert '序号: 2' in result
+    assert '项目名称: 项目B' in result
+    assert '状态: 已完成' in result
+
+
+def test_get_full_document_text(test_document):
+    parser = WordParser(test_document)
+    full_text = parser.get_full_document_text(include_headers=True)
+    
+    assert isinstance(full_text, str)
+    assert '第一章 概述' in full_text
+    assert '第二章 技术方案' in full_text
+    assert '项目背景' in full_text
+    assert '序号: 1' in full_text
+    assert '项目名称: 项目A' in full_text
+    assert 'Word Parser 测试文档' in full_text
+    
+    full_text_no_header = parser.get_full_document_text(include_headers=False)
+    assert 'Word Parser 测试文档' not in full_text_no_header
+
+
+def test_get_section_text_by_name(test_document):
+    parser = WordParser(test_document)
+    
+    section_text = parser.get_section_text_by_name('第一章 概述')
+    assert isinstance(section_text, str)
+    assert '第一章 概述' in section_text
+    assert '1.1 项目背景' in section_text
+    assert '1.2 项目目标' in section_text
+    assert '序号: 1' in section_text
+    
+    section_text_no_child = parser.get_section_text_by_name('第一章 概述', include_children=False)
+    assert '第一章 概述' in section_text_no_child
+    assert '1.1 项目背景' not in section_text_no_child
+    
+    section_text_child = parser.get_section_text_by_name('1.1 项目背景')
+    assert '1.1 项目背景' in section_text_child
+    assert '序号: 1' in section_text_child
+    assert '项目名称: 项目A' in section_text_child
+    
+    not_found_text = parser.get_section_text_by_name('不存在的章节')
+    assert '未找到章节' in not_found_text

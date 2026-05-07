@@ -5,6 +5,12 @@ from docx.shared import Pt
 def create_test_document(output_path: str):
     doc = Document()
     
+    section = doc.sections[0]
+    header = section.header
+    header_paragraph = header.paragraphs[0]
+    header_paragraph.text = "文档标题 - Word Parser 测试文档"
+    header_paragraph.style = doc.styles['Header']
+    
     doc.add_heading('第一章 概述', level=1)
     doc.add_paragraph('这是第一章的正文内容，介绍文档的整体概述。')
     doc.add_paragraph('继续添加更多内容到第一章。')
