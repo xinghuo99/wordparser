@@ -58,6 +58,31 @@ def create_test_document(output_path: str):
     doc.add_heading('2.2 架构设计', level=2)
     doc.add_paragraph('系统采用微服务架构，支持高并发和可扩展性。')
     
+    doc.add_heading('第三章 修订记录', level=1)
+    doc.add_paragraph('本文档的修订历史记录如下：')
+    
+    revision_table = doc.add_table(rows=4, cols=4)
+    revision_table.style = 'Table Grid'
+    hdr_cells = revision_table.rows[0].cells
+    hdr_cells[0].text = '版本号'
+    hdr_cells[1].text = '修订日期'
+    hdr_cells[2].text = '修订人'
+    hdr_cells[3].text = '修订内容'
+    row_cells = revision_table.rows[1].cells
+    row_cells[0].text = 'V1.0'
+    row_cells[1].text = '2024-01-15'
+    row_cells[2].text = '张三'
+    row_cells[3].text = '初始版本'
+    row_cells = revision_table.rows[2].cells
+    row_cells[0].text = 'V1.1'
+    row_cells[1].text = '2024-02-20'
+    row_cells[2].text = '李四'
+    row_cells[3].text = '添加技术选型章节'
+    row_cells = revision_table.rows[3].cells
+    row_cells[0].text = 'V1.2'
+    row_cells[2].text = '王五'
+    row_cells[3].text = '更新架构设计'
+    
     doc.save(output_path)
     print(f"测试文档已创建: {output_path}")
 

@@ -287,3 +287,40 @@ class WordParser:
         
         process_section(section)
         return '\n'.join(parts)
+
+    def get_revision_records(self) -> str:
+        """获取修订记录章节的内容，包括后面紧跟的文字和表格（表格内容组装成文字）"""
+        if not self.sections:
+            self.extract_sections()
+        
+        revision_section = None
+        for section in self.sections:
+            if '修订记录' in section.title:
+                revision_section = section
+                break
+            if section.children:
+                for child in section.children:
+                    if '修订记录' in child.title:
+                        revision_section = child
+                        break
+        
+        if not revision_section:
+            return ""
+        
+        parts = []
+        parts.append(revision_section.title)
+        
+        if revision_section.content:
+            content_lines = revision_section.content.split('\n')
+            for line in content_lines:
+                if line.strip():
+                    parts.append(f"    {line.strip()}")
+        
+        for table in revision_section.tables:
+            table_text = self._table_to_text(table)
+            if table_text:
+                table_lines = table_text.split('\n')
+                for line in table_lines:
+                    parts.append(f"    表格内容：{line}")
+        
+        return '\n'.join(parts)

@@ -3,6 +3,7 @@ import os
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
+from docx import Document
 from word_parser import WordParser, Section
 from document_creator import create_test_document
 
@@ -22,7 +23,7 @@ def test_extract_sections(test_document):
     parser = WordParser(test_document)
     sections = parser.extract_sections()
     
-    assert len(sections) == 2
+    assert len(sections) == 3
     
     assert sections[0].title == '第一章 概述'
     assert sections[0].level == 1
@@ -218,3 +219,83 @@ def test_get_section_text_by_name(test_document):
     
     not_found_text = parser.get_section_text_by_name('不存在的章节')
     assert '未找到章节' in not_found_text
+
+
+def test_get_revision_records(test_document):
+    parser = WordParser(test_document)
+    
+    revision_text = parser.get_revision_records()
+    
+    assert isinstance(revision_text, str)
+    assert '第三章 修订记录' in revision_text
+    assert '本文档的修订历史记录如下' in revision_text
+    assert '版本号: V1.0' in revision_text
+    assert '修订日期: 2024-01-15' in revision_text
+    assert '修订人: 张三' in revision_text
+    assert '修订内容: 初始版本' in revision_text
+    assert '版本号: V1.1' in revision_text
+    assert '修订人: 李四' in revision_text
+
+
+def test_get_revision_records_no_revision_section(tmp_path):
+    """测试文档中没有修订记录章节的情况"""
+    no_revision_doc = tmp_path / 'no_revision.docx'
+    
+    doc = Document()
+    doc.add_heading('第一章 概述', level=1)
+    doc.add_paragraph('这是测试文档')
+    doc.save(str(no_revision_doc))
+    
+    parser = WordParser(str(no_revision_doc))
+    revision_text = parser.get_revision_records()
+    
+    assert isinstance(revision_text, str)
+    assert revision_text == ""
+
+
+def test_get_revision_records_as_subsection(tmp_path):
+    """测试修订记录作为子章节的情况"""
+    subsection_doc = tmp_path / 'subsection_revision.docx'
+    
+    doc = Document()
+    doc.add_heading('附录', level=1)
+    doc.add_heading('附录A 修订记录', level=2)
+    doc.add_paragraph('这是子章节中的修订记录')
+    
+    table = doc.add_table(rows=2, cols=2)
+    table.rows[0].cells[0].text = '版本'
+    table.rows[0].cells[1].text = '内容'
+    table.rows[1].cells[0].text = 'V1.0'
+    table.rows[1].cells[1].text = '初始版本'
+    
+    doc.save(str(subsection_doc))
+    
+    parser = WordParser(str(subsection_doc))
+    revision_text = parser.get_revision_records()
+    
+    assert isinstance(revision_text, str)
+    assert '附录A 修订记录' in revision_text
+    assert '这是子章节中的修订记录' in revision_text
+    assert '版本: V1.0' in revision_text
+
+
+def test_get_revision_records_no_table(tmp_path):
+    """测试修订记录没有表格的情况"""
+    no_table_doc = tmp_path / 'no_table_revision.docx'
+    
+    doc = Document()
+    doc.add_heading('修订记录', level=1)
+    doc.add_paragraph('修订历史：')
+    doc.add_paragraph('- V1.0: 初始版本')
+    doc.add_paragraph('- V1.1: 更新内容')
+    
+    doc.save(str(no_table_doc))
+    
+    parser = WordParser(str(no_table_doc))
+    revision_text = parser.get_revision_records()
+    
+    assert isinstance(revision_text, str)
+    assert '修订记录' in revision_text
+    assert '修订历史：' in revision_text
+    assert 'V1.0: 初始版本' in revision_text
+    assert 'V1.1: 更新内容' in revision_text

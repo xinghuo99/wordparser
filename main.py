@@ -93,6 +93,13 @@ def main():
     print("\n=== 按章节名称获取子章节内容 ===")
     section_text_child = parser.get_section_text_by_name('1.1 项目背景')
     print(section_text_child)
+    
+    print("\n=== 获取修订记录内容 ===")
+    revision_text = parser.get_revision_records()
+    if revision_text:
+        print(revision_text)
+    else:
+        print("未找到修订记录章节")
 
 
 if __name__ == "__main__":
