@@ -83,6 +83,19 @@ def create_test_document(output_path: str):
     row_cells[2].text = '王五'
     row_cells[3].text = '更新架构设计'
     
+    doc.add_heading('第四章 附录', level=1)
+    doc.add_paragraph('本章节包含文档的附录信息。')
+    
+    doc.add_paragraph('修订记录')
+    doc.add_paragraph('以下是文档的详细修订说明：')
+    
+    appendix_table = doc.add_table(rows=2, cols=2)
+    appendix_table.style = 'Table Grid'
+    appendix_table.rows[0].cells[0].text = '版本'
+    appendix_table.rows[0].cells[1].text = '说明'
+    appendix_table.rows[1].cells[0].text = 'V1.3'
+    appendix_table.rows[1].cells[1].text = '添加附录内容'
+    
     doc.save(output_path)
     print(f"测试文档已创建: {output_path}")
 

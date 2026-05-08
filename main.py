@@ -94,12 +94,37 @@ def main():
     section_text_child = parser.get_section_text_by_name('1.1 项目背景')
     print(section_text_child)
     
-    print("\n=== 获取修订记录内容 ===")
-    revision_text = parser.get_revision_records()
+    print("\n=== 获取修订记录内容（章节类型） ===")
+    revision_text, has_table = parser.get_revision_records()
     if revision_text:
         print(revision_text)
+        print(f"\n修订记录是否紧跟表格: {'是' if has_table else '否'}")
     else:
         print("未找到修订记录章节")
+    
+    print("\n=== 测试普通文字修订记录提取 ===")
+    print("文档中第四章附录包含普通文字类型的修订记录")
+    print("（'修订记录'作为普通段落文字，后面跟着说明文字和表格）")
+    print("\n提取结果:")
+    print(revision_text)
+    
+    print("\n=== 按章节提取内容到列表 ===")
+    sections_list = parser.extract_sections_to_list()
+    print(f"共提取到 {len(sections_list)} 个章节")
+    for i, item in enumerate(sections_list):
+        print(f"\n--- 章节 {i+1}: {item['title']} ---")
+        content_preview = item['content'][:200] + "..." if len(item['content']) > 200 else item['content']
+        print(f"内容预览:\n{content_preview}")
+    
+    print("\n=== 根据章节名称查找章节内容 ===")
+    content = WordParser.find_section_content(sections_list, '第一章 概述')
+    print(f"查找 '第一章 概述':\n{content[:200]}...")
+    
+    content2 = WordParser.find_section_content(sections_list, '1.1 项目背景')
+    print(f"\n查找 '1.1 项目背景':\n{content2[:150]}...")
+    
+    content3 = WordParser.find_section_content(sections_list, '不存在的章节')
+    print(f"\n查找 '不存在的章节': '{content3}'")
 
 
 if __name__ == "__main__":
